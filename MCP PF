@@ -1,0 +1,61 @@
+DCPP2026
+Dispositivo móvel e comunicador
+
+- Base quadrada com quatro rodas e motores
+- Sensor de proximidade em base de moto servo
+- Buzzer passivo para sons
+- Display para exibição de textos
+
+- Conexão WIFI viabilizada pelo ESP32 que permite enviar, interfaceado por um site pela LAN do ESP, ao STM32 informações sobre:
+    Dirigir o veículo
+    Salvar localização
+    Escolher localização
+    Digitar texto para display
+    Emitir som do buzzer
+- Código de gerenciamento de obstáculo no STM32
+    Sempre mantém o sensor para frente
+    Ao encontrar obstáculo, avalia lados e escolhe melhor/direito
+    Segue em loop de obstáculo, procurando entrada no caminho e avaliando frente
+    Se encontra objeto na frente, tenta o mesmo para o lado oposto
+    Se falha no outro lado, retorna pelo principal ao 0,0
+    Se consegue encontrar espaço, sai do loop
+
+Função de medir distância
+Função de girar motosservo
+Função de girar lado direito/esquerdo
+Função de emitir som
+Função de enviar texto para display
+Função de salvar localização
+Função de retornar localização
+Função de dirigir para localização
+    Dentro dela, função de obstáculo
+Funções do recebimento de info pelo ESP32
+
+No ESP32: Função WIFI
+          Função de envio de informações
+
+2 saídas para gateH
+4 pinos do display
+1 pino do buzzer
+3 pinos do motoservo
+3 pinos do sensor
+
+- Baixa velocidade para não derrapar e perder precisão
+
+
+Método 1: O Fluxo Manual Organizado (Recomendado)
+
+É o método mais seguro e limpo para evitar conflitos de pastas.
+1. Gere o código no STM32CubeMX:
+	• Configure os pinos, periféricos e clocks da sua Black Pill.
+	• Na aba Project Manager, configure a estrutura:
+		• Toolchain / IDE: Escolha STM32CubeIDE ou Makefile.
+		• Na aba Code Generator, marque a opção "Generate peripheral initialization as a pair of '.c/.h' files per peripheral" (isso deixa o código muito mais limpo).
+	• Clique em Generate Code.
+2. Crie o projeto no PlatformIO:
+	• No VS Code, abra o PlatformIO e crie um projeto novo para a Black Pill F411CE selecionando o framework STM32Cube.
+3. Mova os arquivos:
+	• Copie o conteúdo da pasta Core/Src gerada pelo CubeMX para dentro da pasta src do PlatformIO.
+	• Copie o conteúdo da pasta Core/Inc gerada pelo CubeMX para dentro da pasta include do PlatformIO.
+	• (O PlatformIO já baixa as bibliotecas HAL nativas de fundo, então você não precisa copiar as pastas de Drivers da ST).
+upload_protocol = dfu no platofmio .ini
