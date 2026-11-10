@@ -1,17 +1,21 @@
-DCPP2026
-Dispositivo móvel e comunicador
+O ESP32 abre na LAN (de nome DDCP e senha rambo2026) um site com o cabeçalho "DDCP 2026", em cujo lado direito está a posição atual enviada pelo STM32 (XXX,YYY), e do lado esquerdo um relógio com HH:MM:SS em cima e weekday embaixo.
+Logo abaixo do cabeçalho, existe um botão joystick que permite a pessoa "arrastar" ele para a direção que quer, sabendo que, para o lados extremos, o robô irá somente se virar para aquele lado sobre seu eixo, sem movimentação translacional. Pela posição dele, o ESP32 sabe qual conjunto de texto enviar para o STM32 (ele recebe a potência desejada de translação [por quão perto está o botão do extremo do seu círculo] e o sentido que as rodas devem estar [pela angulação em relação ao médio], o STM32 pega esses valores e decide se é hora de dar curva leve, curva fechada, andar para trás ou frente sem curva e girar sobre o próprio eixo. No formato "M PPP ANG", sendo PP a potência de 0 a 100 e ANG o Ângulo em relação ao meio de -180, esquerda, a 180, direita). O meio do botão sempre será equivalente a uma movimentação translacional com potência igual nas rodas, ou seja, independente da orientação do robo, sempre será a frente. O STM32 fica responsável por receber esses dados e adaptar para o sentido atual (segurar o joystick a uma certa angulação  de forma constante, faz o robo girar em um circulo). O ESP32 envia uma vez o comando para o STM32, que deixa o motor na configuração até o usuário mudar a selação do botão (avaliar se isso é melhor feito pelo JS ou pelo ESP32). Soltar o joystick, pausa imediatamente os motores das rodas.
 
-- Base quadrada com quatro rodas e motores
-- Sensor de proximidade em base de moto servo
-- Buzzer passivo para sons
-- Display para exibição de textos
+Depois dessa seção, existe uma seção de localizações.
+Primeiro, um botão que retorna o robô para a coordenada 0,0
+Após ele, um botão de salvar localização, com uma entrada de nome por input, limitada a 50 caracteres. Após clicar em salvar, um novo botão com o nome é salvo logo abaixo do último botão salvo ou do botão de localização inicial.
+Ao clicar, o ESP32 envia um comando "GOTO XXX YYY", que ativa no STM32 o modo autônomo com targetX XXX e targetY YYY
 
-- Conexão WIFI viabilizada pelo ESP32 que permite enviar, interfaceado por um site pela LAN do ESP, ao STM32 informações sobre:
-    Dirigir o veículo
-    Salvar localização
-    Escolher localização
-    Digitar texto para display
-    Emitir som do buzzer
+Abaixo disso, existe um botão vermelho para parada de emergência, que para no modo manual ou autônomo
+
+Depois dessa seção, existe um campo de input, limitado a 20 caracteres, seguido de um botão enviar, que envia para o STM32 o comando de mostrar o texto digitado no input no display no formato "D tttttttttt...".
+Enfim, existe um botão para ativar o buzzer, que fica indisponível por 25s após o clique, que envia no formato "B". Quando o STM32 chegar ao targetXXX e targetYYY no modo autônomo, ele também tocará a música do buzzer.
+
+O STM32 continuamente envia a sua localização calculada para o ESP32 via UART.
+A localização é calculada com base nos comandos enviados pelo usuário. Toda vez que um comando estiver em ação, o STM32 irá calcular quanto o robô deve ter se movimentado em cm e salvar a localização, considerando 0,0 o local onde ele estava ao ligar. Como esse é o método de cálculo, as rodas não devem nunca estar em alta potência, já que isso poderia diminuir a precisão do cálculo. Avalie outras medidas com essa intenção. Em curvas, e mesmo em orientação desfavorável, as movimentações do robô sempre devem estar dispostas no mesmo plano cartesiano XY.
+
+Enquanto um comando de movimento translacional está em curso (os de movimentação sobre o eixo estão desconsideradas), o sensor mede a distÂncia para objetos a frente, retornando e salvando na variável distanciaObjeto a média de 10 medidas seguidas, distanciadas 5ms entre elas [essa operação será chamdada de função medição]. Caso essa variável esteja menor que 15cm, entra no modo cuidar de obstáculo.
+Esse modo, ao ser ativado primeiramente, gira o motoservo abaixo do sensor ultrassônico para os lados direito e esquerdo; em cada lado, realiza a função medição, e começa a andar para o lado que tem maior distância para futuro objeto, ou para o lado direito, como padrão, em casos de valores inconclusivos. Ao escolher o lado, ele se movimenta para aquela direção fazendo medidas constantes para a sua frente e para o sentido da movimentação anterior (por exemplo, se ele estava se movimentando para o norte antes de encontrar o obstáculo, após decidir o lado leste/oeste, ele segue medindo o norte. A movimentação angular do motoservo fará o sensor se mover para o angulo desejado). Ao medir o sentido anterior e não houver mais objeto, ele volta a se locomover para a coordenada objetivo. Caso ele chegue ao final do lado sem vencer o obstáculo, ela vai para o local do obstáculo e escolhe o outro lado. Caso o outro lado também não permite o contorno, ele vai para o obstaculo e retorna para 0,0 a partir dele. O modo obstáculo pode ser ativado tanto no modo autonomo, quanto no modo manual.
 - Código de gerenciamento de obstáculo no STM32
     Sempre mantém o sensor para frente
     Ao encontrar obstáculo, avalia lados e escolhe melhor/direito
@@ -19,28 +23,13 @@ Dispositivo móvel e comunicador
     Se encontra objeto na frente, tenta o mesmo para o lado oposto
     Se falha no outro lado, retorna pelo principal ao 0,0
     Se consegue encontrar espaço, sai do loop
+No modo manual, ao executar o comando, ele contiunuaente realiza a função medição olhando para sua frente, e quando algo chega no limite de 15cm, ele para. Caso o usuário tente movimentar ele para frente com um obstaculo a 15cm, o carro não se move, podendo apenas girar sobre o eixo para algum lado ou para trás.
+Ao receber o comando de display, o STM32 aenas envia o texto iemdiatamente ao display.
+Ao ativar o buzzer, uma música é tocada,que será definida com base nas frequÊncias das notas musicais e uma medida de tempo como colcheia, semicolcheia etc
 
-Função de medir distância
-Função de girar motosservo
-Função de girar lado direito/esquerdo
-Função de emitir som
-Função de enviar texto para display
-Função de salvar localização
-Função de retornar localização
-Função de dirigir para localização
-    Dentro dela, função de obstáculo
-Funções do recebimento de info pelo ESP32
 
-No ESP32: Função WIFI
-          Função de envio de informações
 
-2 saídas para gateH
-4 pinos do display
-1 pino do buzzer
-3 pinos do motoservo
-3 pinos do sensor
 
-- Baixa velocidade para não derrapar e perder precisão
 
 
 Método 1: O Fluxo Manual Organizado (Recomendado)
