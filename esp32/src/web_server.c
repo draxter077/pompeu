@@ -75,12 +75,8 @@ static const char *html_page =
 "            background: #007bff;\n"
 "            color: white;\n"
 "        }\n"
-"        button.danger {\n"
-"            background: #dc3545;\n"
-"        }\n"
-"        button:disabled {\n"
-"            background: #ccc;\n"
-"            cursor: not-allowed;\n"
+"        .danger {\n"
+"            background:red;\n"
 "        }\n"
 "        input[type=\"text\"] {\n"
 "            padding: 8px;\n"
@@ -88,19 +84,12 @@ static const char *html_page =
 "            max-width: 250px;\n"
 "            margin-right: 5px;\n"
 "        }\n"
-"        .loc-list {\n"
-"            margin-top: 10px;\n"
-"            display: flex;\n"
-"            flex-direction: column;\n"
-"            align-items: center;\n"
-"        }\n"
 "    </style>\n"
 "</head>\n"
 "<body>\n"
 "    <header>\n"
 "        <div class=\"header-section\" id=\"clock-box\">Carregando relógio...</div>\n"
 "        <div class=\"header-center\">DDCP 2026</div>\n"
-"        <div class=\"header-section\">Pos: <span id=\"pos-box\">0,0</span></div>\n"
 "    </header>\n"
 "\n"
 "    <div class=\"container\">\n"
@@ -111,29 +100,13 @@ static const char *html_page =
 "    </div>\n"
 "\n"
 "    <div class=\"container\">\n"
-"        <h3>Gestão de Localizações</h3>\n"
-"        <button onclick=\"sendCmd('GOTO 0 0')\">Retornar para (0,0)</button>\n"
-"        <div style=\"margin-top: 10px;\">\n"
-"            <input type=\"text\" id=\"loc-name\" maxlength=\"20\" placeholder=\"Nome do local (max 20)\">\n"
-"            <button onclick=\"saveLocation()\">Salvar Local</button>\n"
-"        </div>\n"
-"        <div class=\"loc-list\" id=\"loc-container\"></div>\n"
-"    </div>\n"
-"\n"
-"    <div class=\"container\">\n"
-"        <h3>Parada de Emergência</h3>\n"
 "        <button class=\"danger\" style=\"font-size: 18px; width: 80%; padding: 15px;\" onclick=\"sendCmd('CMD:EMERGENCY')\">PARADA DE EMERGÊNCIA</button>\n"
 "    </div>\n"
 "\n"
 "    <div class=\"container\">\n"
 "        <h3>Display</h3>\n"
-"        <input type=\"text\" id=\"display-text\" maxlength=\"20\" placeholder=\"Texto para o display (max 20)\">\n"
+"        <input type=\"text\" id=\"display-text\" maxlength=\"20\" placeholder=\"Digite aqui\">\n"
 "        <button onclick=\"sendDisplay()\">Enviar Display</button>\n"
-"    </div>\n"
-"\n"
-"    <div class=\"container\">\n"
-"        <h3>Buzzer</h3>\n"
-"        <button id=\"buzzer-btn\" onclick=\"triggerBuzzer()\">Ativar Buzzer</button>\n"
 "    </div>\n"
 "\n"
 "    <script>\n"
@@ -146,13 +119,6 @@ static const char *html_page =
 "        }\n"
 "        setInterval(updateClock, 1000);\n"
 "\n"
-"        function updateCoords() {\n"
-"            fetch('/get_coords').then(res => res.text()).then(data => {\n"
-"                document.getElementById('pos-box').innerText = data;\n"
-"            });\n"
-"        }\n"
-"        setInterval(updateCoords, 500);\n"
-"\n"
 "        function sendCmd(cmd) {\n"
 "            fetch('/cmd?msg=' + encodeURIComponent(cmd));\n"
 "        }\n"
@@ -160,24 +126,18 @@ static const char *html_page =
 "        const joystick = document.getElementById('joystick');\n"
 "        const knob = document.getElementById('knob');\n"
 "        let dragging = false;\n"
-"        const maxDist = 65;\n"
+"        const maxD = 100;\n"
 "\n"
 "        function handleMove(clientX, clientY) {\n"
 "            const rect = joystick.getBoundingClientRect();\n"
-"            const centerX = rect.left + rect.width / 2;\n"
-"            const centerY = rect.top + rect.height / 2;\n"
+"            const centerX = rect.left + rect.width/2;\n"
+"            const centerY = rect.top + rect.height/2;\n"
 "            let dx = clientX - centerX;\n"
 "            let dy = clientY - centerY;\n"
-"            const dist = Math.sqrt(dx * dx + dy * dy);\n"
-"            if (dist > maxDist) {\n"
-"                dx = (dx / dist) * maxDist;\n"
-"                dy = (dy / dist) * maxDist;\n"
+"            if(dx <= maxD && dx >= -maxD && dy <= maxD && dy >= -maxD){\n"
+"               knob.style.transform = `translate(${dx}px, ${dy}px)`;\n"
+"               sendCmd('M ' + (dx/maxD).toFixed(3) + ' ' + (dy/maxD).toFixed(3));\n"
 "            }\n"
-"            knob.style.transform = `translate(${dx}px, ${dy}px)`;\n"
-"            const normX = (dx / maxDist).toFixed(2);\n"
-"            const normY = (-dy / maxDist).toFixed(2);\n"
-"            const angle = Math.atan2(dx, -dy) * (180 / Math.PI);\n"
-"            sendCmd('M ' + normX + ' ' + normY + ' ' + Math.round(angle));\n"
 "        }\n"
 "\n"
 "        knob.addEventListener('mousedown', (e) => { dragging = true; });\n"
@@ -186,7 +146,7 @@ static const char *html_page =
 "            if (dragging) {\n"
 "                dragging = false;\n"
 "                knob.style.transform = 'translate(0px, 0px)';\n"
-"                sendCmd('M 0 0 0');\n"
+"                sendCmd('M 0 0');\n"
 "            }\n"
 "        });\n"
 "\n"
@@ -200,40 +160,9 @@ static const char *html_page =
 "            }\n"
 "        });\n"
 "\n"
-"        function saveLocation() {\n"
-"            const name = document.getElementById('loc-name').value;\n"
-"            if (!name) return;\n"
-"            fetch('/get_coords').then(res => res.text()).then(coords => {\n"
-"                const container = document.getElementById('loc-container');\n"
-"                const btn = document.createElement('button');\n"
-"                btn.innerText = name + ' (' + coords + ')';\n"
-"                btn.onclick = function() { sendCmd('GOTO ' + coords); };\n"
-"                container.appendChild(btn);\n"
-"                document.getElementById('loc-name').value = '';\n"
-"            });\n"
-"        }\n"
-"\n"
 "        function sendDisplay() {\n"
 "            const text = document.getElementById('display-text').value;\n"
 "            sendCmd('D ' + text);\n"
-"        }\n"
-"\n"
-"        function triggerBuzzer() {\n"
-"            sendCmd('B');\n"
-"            const btn = document.getElementById('buzzer-btn');\n"
-"            btn.disabled = true;\n"
-"            let timeLeft = 25;\n"
-"            btn.innerText = 'Aguarde ' + timeLeft + 's';\n"
-"            let timer = setInterval(() => {\n"
-"                timeLeft--;\n"
-"                if (timeLeft > 0) {\n"
-"                    btn.innerText = 'Aguarde ' + timeLeft + 's';\n"
-"                } else {\n"
-"                    clearInterval(timer);\n"
-"                    btn.disabled = false;\n"
-"                    btn.innerText = 'Ativar Buzzer';\n"
-"                }\n"
-"            }, 1000);\n"
 "        }\n"
 "    </script>\n"
 "</body>\n"
@@ -258,12 +187,6 @@ static esp_err_t cmd_get_handler(httpd_req_t *req){
     return ESP_OK;
 }
 
-static esp_err_t coords_get_handler(httpd_req_t *req){
-    httpd_resp_set_type(req, "text/plain");
-    httpd_resp_send(req, latest_coords, strlen(latest_coords));
-    return ESP_OK;
-}
-
 static const httpd_uri_t root = {
     .uri       = "/",
     .method    = HTTP_GET,
@@ -278,13 +201,6 @@ static const httpd_uri_t cmd = {
     .user_ctx  = NULL
 };
 
-static const httpd_uri_t coords = {
-    .uri       = "/get_coords",
-    .method    = HTTP_GET,
-    .handler   = coords_get_handler,
-    .user_ctx  = NULL
-};
-
 httpd_handle_t start_webserver(void){
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
@@ -292,8 +208,7 @@ httpd_handle_t start_webserver(void){
 
     if (httpd_start(&server, &config) == ESP_OK){
         httpd_register_uri_handler(server, &root);
-        httpd_register_uri_handler(server, &cmd);
-        httpd_register_uri_handler(server, &coords);
+        httpd_register_uri_handler(server, &cmd)
     }
 
     return server;

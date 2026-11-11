@@ -49,6 +49,5 @@ void app_main(void) {
 
     wifi_init_softap();
     uart_bridge_init();
-    xTaskCreate(uart_listener_task, "uart_listener_task", 4096, NULL, 5, NULL);
     start_webserver();
 }

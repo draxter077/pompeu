@@ -1,49 +1,21 @@
-O ESP32 abre na LAN (de nome DDCP e senha rambo2026) um site com o cabeçalho "DDCP 2026", em cujo lado direito está a posição atual enviada pelo STM32 (XXX,YYY), e do lado esquerdo um relógio com HH:MM:SS em cima e weekday embaixo.
-Logo abaixo do cabeçalho, existe um botão joystick que permite a pessoa "arrastar" ele para a direção que quer, sabendo que, para o lados extremos, o robô irá somente se virar para aquele lado sobre seu eixo, sem movimentação translacional. Pela posição dele, o ESP32 sabe qual conjunto de texto enviar para o STM32 (a potência nos motores sempre é a mesma. Um Y positivo significa que o robô deve rodar a roda no sentido positivo; um Y negativo, significa o oposto. O Y revela quanto mais um lado deve ter de potência em relação a outro. Um Y positivo (direito), sendo Y de 0 a 1, revela que o lado direito deve receber (1-Y)*P da potência. No formato "M XXX YYY", sendo XXX um valor de -1 a 1, com base nas coordenadas X do botão e YYY de -1 a 1 com base nas coordenadas Y do botão). O STM32 fica responsável por receber esses dados e adaptar para o sentido atual (segurar o joystick a uma certa angulação  de forma constante, faz o robo girar em um circulo). O ESP32 envia uma vez o comando para o STM32, que deixa o motor na configuração até o usuário mudar a configuração do botão, em vez de ficar continuamente mandando os valores do botão. O JS salva as coordenadas atuais e, quando novas aparecerem, ele envia um novo UART para o STM32. Soltar o joystick, pausa imediatamente os motores das rodas, enviando "M 0 0".
-o STM32 recebe o "M XXX YYY" e imediatamente adapta o sentido da potência para o valor recebido de X conforme acima e adapta a potência dos lados com base na medida de Y como dita acima. O envio do "M xxx yyy" causa uma interrupção no STM32 que atualiza as variáveis internamente e envia para os pinos os valores necessários.
-
-Depois dessa seção, existe uma seção de localizações.
-Primeiro, um botão que retorna o robô para a coordenada 0,0
-Após ele, um botão de salvar localização, com uma entrada de nome por input, limitada a 20 caracteres. Após clicar em salvar, um novo botão com o nome é salvo logo abaixo do último botão salvo ou do botão de localização inicial.
-Ao clicar, o ESP32 envia um comando "GOTO XXX YYY", que ativa no STM32 o modo autônomo com targetX XXX e targetY YYY
-O STM32, ao recebe o GOTO, com base na localização atual, segue a trajetória em linha reta até o targetXY.
-
-Abaixo disso, existe um botão vermelho para parada de emergência, que para o modo manual ou autônomo
-
-Depois dessa seção, existe um campo de input, limitado a 20 caracteres, seguido de um botão enviar, que envia para o STM32 o comando de mostrar o texto digitado no input no display no formato "D tttttttttt...".
-Enfim, existe um botão para ativar o buzzer, que fica indisponível por 25s após o clique, que envia o formato "B" para o STM32. Quando o STM32 chegar ao targetXXX e targetYYY no modo autônomo, ele também tocará a música do buzzer.
-
-Todos esses envios causam interrupções no STM32, que realiza a função necessária. A execução da função não impede outras funções de serem realizadas concomitantemente, sendo, portanto, colocada em uma task do processador, permitindo paralelismo.
-
-O STM32 continuamente envia a sua localização calculada para o ESP32 via UART.
-A localização é calculada com base nos comandos enviados pelo usuário. Toda vez que um comando estiver em ação, o STM32 irá calcular quanto o robô deve ter se movimentado em cm e salvar a localização, considerando 0,0 o local onde ele estava ao ligar. Como esse é o método de cálculo, as rodas não devem nunca estar em alta potência, já que isso poderia diminuir a precisão do cálculo. Avalie outras medidas com essa intenção. Em curvas, e mesmo em orientação desfavorável, as movimentações do robô sempre devem estar dispostas no mesmo plano cartesiano XY.
-
-Enquanto um comando de movimento translacional está em curso (os de movimentação sobre o eixo estão desconsideradas), o sensor mede a distÂncia para objetos a frente, retornando e salvando na variável distanciaObjeto a média de 10 medidas seguidas, distanciadas 5ms entre elas [essa operação será chamdada de função medição], medidas uma vez por segundo. Caso essa variável esteja menor ou igual que 10cm, entra no modo cuidar de obstáculo, salvando a coordenada XY  do obstáculo.
-Esse modo, ao ser ativado primeiramente, gira o motoservo abaixo do sensor ultrassônico para os lados direito e esquerdo; em cada lado, realiza a função medição uma única vez, e começa a andar para o lado que tem maior distância para futuro objeto, ou para o lado direito, como padrão, em casos de valores inconclusivos. Ao escolher o lado, ele se movimenta para aquela direção fazendo medidas constantes para a sua frente e para o sentido da movimentação anterior (por exemplo, se ele estava se movimentando para o norte antes de encontrar o obstáculo, após decidir o lado leste/oeste, ele segue medindo o norte) uma rodada de medições frente-lado a cada segundo (A movimentação angular do motoservo fará o sensor se mover para o angulo desejado). Ao medir o sentido anterior e não houver mais objeto, ele volta a se locomover para a coordenada objetivo. Nesse caso, ele entra novamente no modo autônomo como se ele tivesse sido ativado agora, seuindo o caminho de linha reta até o targetXY com base nas coordenadas atuais. Caso ele chegue ao final do lado sem vencer o obstáculo, ela vai para o local do obstáculo e escolhe o outro lado. Caso o outro lado também não permita seguir, ele vai para o obstaculo e toca o buzzer, mostrando no display que não conseguiu contornr o obstáculo. O modo obstáculo pode ser ativado tanto no modo autonomo, quanto no modo manual, sendo que neste o robô não tenta contornar, apenas não continua a movimentação para aquele sentido. Caso o usuário tente movimentar ele para frente com um obstaculo a 10cm, o carro não se move, podendo apenas girar sobre o eixo para algum lado ou para trás.
-Ao receber o comando de display, o STM32 aenas envia o texto iemdiatamente ao display.
-Ao ativar o buzzer, uma música é tocada,que será definida com base nas frequÊncias das notas musicais e uma medida de tempo como colcheia, semicolcheia etc
+O ESP32 tradicional possui 3 interfaces UART (UART0, UART1 e UART2) de hardware.
+Cada uma delas cumpre funções específicas no uso diário:
+• UART0: Geralmente utilizada para comunicação com o computador (monitor serial/upload de código via USB).
+• UART1: Livre para uso geral (muitas vezes mapeada para pinos específicos, mas flexível via pin muxing).
+• UART2: Livre para uso geral.
 
 
 
 
 
-Método 1: O Fluxo Manual Organizado (Recomendado)
-
-É o método mais seguro e limpo para evitar conflitos de pastas.
-1. Gere o código no STM32CubeMX:
-	• Configure os pinos, periféricos e clocks da sua Black Pill.
-	• Na aba Project Manager, configure a estrutura:
-		• Toolchain / IDE: Escolha STM32CubeIDE ou Makefile.
-		• Na aba Code Generator, marque a opção "Generate peripheral initialization as a pair of '.c/.h' files per peripheral" (isso deixa o código muito mais limpo).
-	• Clique em Generate Code.
-2. Crie o projeto no PlatformIO:
-	• No VS Code, abra o PlatformIO e crie um projeto novo para a Black Pill F411CE selecionando o framework STM32Cube.
-3. Mova os arquivos:
-	• Copie o conteúdo da pasta Core/Src gerada pelo CubeMX para dentro da pasta src do PlatformIO.
-	• Copie o conteúdo da pasta Core/Inc gerada pelo CubeMX para dentro da pasta include do PlatformIO.
-	• (O PlatformIO já baixa as bibliotecas HAL nativas de fundo, então você não precisa copiar as pastas de Drivers da ST).
-upload_protocol = dfu no platofmio .ini
-
-
-Considerando o escopo do projeto, qual tipo de conteúdo/função/variável você colocaria no arquivo NOME do MICRO?
-Seguindo isso, me retorne o conteúdo exato do arquivo NOME
+Dispositivo móvel com display e alto falante
+STM32
+	Ponte h (PWM digital)
+		Lado esquerdo
+		Lado direito
+	display OLED (conexão serial)
+	buzzer (PWM digital)
+	UART ESP32 (conexão serial)
+ESP32
+	LAN
+	UART STM32 (conexão serial)
