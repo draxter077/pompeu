@@ -11,9 +11,9 @@
 #include "uart_bridge.h"
 #include "web_server.h"
 
-#define WIFI_SSID       "DDCP"
+#define WIFI_SSID       "DCPP"
 #define WIFI_PASS       "rambo2026"
-#define MAX_STA_CONN    2
+#define MAX_STA_CONN    4
 
 static void wifi_init_softap(void) {
     ESP_ERROR_CHECK(esp_netif_init());
@@ -33,10 +33,6 @@ static void wifi_init_softap(void) {
             .authmode = WIFI_AUTH_WPA2_PSK,
         },
     };
-    
-    if (strlen(WIFI_PASS) == 0) {
-        wifi_config.ap.authmode = WIFI_AUTH_OPEN;
-    }
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
@@ -44,7 +40,6 @@ static void wifi_init_softap(void) {
 }
 
 void app_main(void) {
-    // Inicializa a NVS (necessária para o Wi-Fi)
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_ERROR_CHECK(nvs_flash_erase());
@@ -52,15 +47,8 @@ void app_main(void) {
     }
     ESP_ERROR_CHECK(ret);
 
-    // Inicializa a rede Wi-Fi no modo AP (Access Point)
     wifi_init_softap();
-
-    // Inicializa a ponte UART para comunicação com o STM32
     uart_bridge_init();
-
-    // Cria a task do FreeRTOS para escutar continuamente as respostas do STM32 via UART
     xTaskCreate(uart_listener_task, "uart_listener_task", 4096, NULL, 5, NULL);
-
-    // Inicia o servidor web HTTP para servir a interface
     start_webserver();
 }

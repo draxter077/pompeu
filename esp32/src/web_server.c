@@ -7,7 +7,6 @@
 #include "esp_event.h"
 #include "nvs_flash.h"
 
-// Página HTML completa contendo a interface do usuário (Cabeçalho, Relógio, Posição, Joystick, Localizações, Display e Buzzer com bloqueio de 25s)
 static const char *html_page = 
 "<!DOCTYPE html>\n"
 "<html>\n"
@@ -240,37 +239,31 @@ static const char *html_page =
 "</body>\n"
 "</html>";
 
-// Handler para a rota raiz "/"
-static esp_err_t root_get_handler(httpd_req_t *req) {
+static esp_err_t root_get_handler(httpd_req_t *req){
     httpd_resp_set_type(req, "text/html");
     httpd_resp_send(req, html_page, strlen(html_page));
     return ESP_OK;
 }
 
-// Handler para a rota de comandos "/cmd"
-static esp_err_t cmd_get_handler(httpd_req_t *req) {
+static esp_err_t cmd_get_handler(httpd_req_t *req){
     char buf[128];
     size_t buf_len = sizeof(buf);
     
-    if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK) {
+    if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK){
         char param[64];
-        if (httpd_query_key_value(buf, "msg", param, sizeof(param)) == ESP_OK) {
-            uart_send_command(param);
-        }
+        if (httpd_query_key_value(buf, "msg", param, sizeof(param)) == ESP_OK) uart_send_command(param);
     }
     
     httpd_resp_send(req, "OK", 2);
     return ESP_OK;
 }
 
-// Handler para a rota de consulta de coordenadas "/get_coords"
-static esp_err_t coords_get_handler(httpd_req_t *req) {
+static esp_err_t coords_get_handler(httpd_req_t *req){
     httpd_resp_set_type(req, "text/plain");
     httpd_resp_send(req, latest_coords, strlen(latest_coords));
     return ESP_OK;
 }
 
-// Estruturas de registro das URIs
 static const httpd_uri_t root = {
     .uri       = "/",
     .method    = HTTP_GET,
@@ -292,13 +285,12 @@ static const httpd_uri_t coords = {
     .user_ctx  = NULL
 };
 
-// Função para iniciar o servidor web
-httpd_handle_t start_webserver(void) {
+httpd_handle_t start_webserver(void){
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.max_uri_handlers = 8;
 
-    if (httpd_start(&server, &config) == ESP_OK) {
+    if (httpd_start(&server, &config) == ESP_OK){
         httpd_register_uri_handler(server, &root);
         httpd_register_uri_handler(server, &cmd);
         httpd_register_uri_handler(server, &coords);
@@ -307,9 +299,6 @@ httpd_handle_t start_webserver(void) {
     return server;
 }
 
-// Função para parar o servidor web
-void stop_webserver(httpd_handle_t server) {
-    if (server) {
-        httpd_stop(server);
-    }
+void stop_webserver(httpd_handle_t server){
+    if (server) httpd_stop(server);
 }
