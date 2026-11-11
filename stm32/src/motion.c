@@ -1,6 +1,7 @@
 #include "motion.h"
 #include "config.h"
-#include <math.h>
+
+TIM_HandleTypeDef htim1;
 
 void motion_init(void){
     motion_stop();
@@ -29,7 +30,7 @@ void motion_process_command(float x, float y){
     else motion_stop();
 }
 
-void motion_set_speeds(float left_power, float right_power) {
+void motion_set_speeds(float left_power, float right_power){
     uint32_t left_pwm = (uint32_t)(left_power*(float)MAX_PWM_VALUE);
     uint32_t right_pwm = (uint32_t)(right_power*(float)MAX_PWM_VALUE);
 

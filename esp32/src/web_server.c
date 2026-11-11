@@ -208,7 +208,7 @@ httpd_handle_t start_webserver(void){
 
     if (httpd_start(&server, &config) == ESP_OK){
         httpd_register_uri_handler(server, &root);
-        httpd_register_uri_handler(server, &cmd)
+        httpd_register_uri_handler(server, &cmd);
     }
 
     return server;

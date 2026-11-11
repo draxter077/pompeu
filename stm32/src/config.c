@@ -34,7 +34,7 @@ void UART2_Init(void){
   huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart2.Init.OverSampling = UART_OVERSAMPLING_16;
 
-  HAL_UART_INIT(&huart2);
+  HAL_UART_Init(&huart2);
 
   // 4. Configuração da Interrupção via código
   HAL_NVIC_SetPriority(USART2_IRQn, 0, 0);
@@ -43,13 +43,13 @@ void UART2_Init(void){
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
   if (huart->Instance == UART_TYPE){
-    if (cmdByteReceived == '\n' || cmdByteReceived >= (UART_BUFFER_SIZE - 1)){
+    if (cmdByteReceived == '\n' || cmdReceivedIndex >= (UART_BUFFER_SIZE - 1)){
       cmdReceived[cmdReceivedIndex] = '\0';
       newCommandSaved = 1;
       cmdReceivedIndex = 0;
     }
     else{
-      cmdReceived[cmdReceivedIndex] = (char)cmdByteReceived;
+      cmdReceived[cmdReceivedIndex] = (char) cmdByteReceived;
       cmdReceivedIndex++;
     }
 
