@@ -3,6 +3,8 @@
 #include "config.h"
 #include "motion.h"
 #include "display.h"
+#include "button.h"
+#include "photoresistor.h"
 
 int main(void){
   HAL_Init(); // Inicializações do hardware
@@ -13,6 +15,8 @@ int main(void){
   motion_init();
   OLED_I2C_Init();
   OLED_Init();
+  buttonInit();
+  photoresistorInit();
 
   while(1){
     if(newCommandSaved){ // Lógica de tratamento de comandos

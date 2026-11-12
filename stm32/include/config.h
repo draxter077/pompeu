@@ -28,4 +28,6 @@ void USART2_IRQHandler(void); // Tratamento da interrupção pelo UART
 void SystemClock_Config(void); // Funções básicas
 void MX_GPIO_Init(void);
 
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin); // Tratamento de interrupção externa
+
 #endif

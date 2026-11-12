@@ -19,5 +19,6 @@
 extern TIM_HandleTypeDef htim2; // Handle do timer 2 para o PWM
 void motion_init(void); // Inicializa e configura pinos dos motores
 void motion_process_command(float x, float y); // Recebe o cmd do ESP32 e transforma em sinal para rodas
+void motion_stop(void); // Para os motores
 
 #endif

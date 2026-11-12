@@ -1,4 +1,6 @@
 #include "config.h"
+#include "motion.h"
+#include "button.h"
 
 UART_HandleTypeDef huart2; // Seção de comunicação UART
 char cmdReceived[50];
@@ -36,17 +38,19 @@ void UART2_Init(void){
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
-  if(cmdByteReceived == '\n' || cmdReceivedIndex >= (UART_BUFFER_SIZE - 1)){ // Avalia se o byte recebido é de finalização
-    cmdReceived[cmdReceivedIndex] = '\0'; // Fecha a string
-    newCommandSaved = 1; // Avisa sobre a conclusão
-    cmdReceivedIndex = 0; // Zera o índice para a próxima comunicação
-  }
-  else if (cmdByteReceived != '/r'){ // Caso não seja um caractere vazio, comum perto da finalização
-    cmdReceived[cmdReceivedIndex] = (char) cmdByteReceived;
-    cmdReceivedIndex++;
-  }
+  if(huart->Instance == UART_TYPE){
+    if(cmdByteReceived == '\n' || cmdReceivedIndex >= (UART_BUFFER_SIZE - 1)){ // Avalia se o byte recebido é de finalização
+      cmdReceived[cmdReceivedIndex] = '\0'; // Fecha a string
+      newCommandSaved = 1; // Avisa sobre a conclusão
+      cmdReceivedIndex = 0; // Zera o índice para a próxima comunicação
+    }
+    else if (cmdByteReceived != '/r'){ // Caso não seja um caractere vazio, comum perto da finalização
+      cmdReceived[cmdReceivedIndex] = (char) cmdByteReceived;
+      cmdReceivedIndex++;
+    }
 
-  HAL_UART_Receive_IT(huart, &cmdByteReceived, 1); // Restarta a interrupção
+    HAL_UART_Receive_IT(huart, &cmdByteReceived, 1); // Restarta a interrupção
+  }
 }
 
 void USART2_IRQHandler(void){
@@ -95,4 +99,8 @@ void MX_GPIO_Init(void) {
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
+    if (GPIO_Pin == BUTTON_PIN) motion_stop();
 }
