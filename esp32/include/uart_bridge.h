@@ -11,6 +11,6 @@
 #define UART_BAUD_RATE   (115200)
 
 void uart_bridge_init(void); // Função para iniciar a UART
-void uart_send_command(const char *cmd_str); // Função para enviar comando de forma serial
+void uart_send_command(const char *cmd_str); // Função para enviar comunicação
 
 #endif

@@ -7,7 +7,7 @@
 #include "esp_event.h"
 #include "nvs_flash.h"
 
-static const char *html_page = 
+static const char *html_page = // HTML da página no root
 "<!DOCTYPE html>\n"
 "<html>\n"
 "<head>\n"
@@ -88,29 +88,29 @@ static const char *html_page =
 "</head>\n"
 "<body>\n"
 "    <header>\n"
-"        <div class=\"header-section\" id=\"clock-box\">Carregando relógio...</div>\n"
+"        <div class=\"header-section\" id=\"clock-box\">Carregando relógio...</div>\n" // Cabeçalho da página com relógio
 "        <div class=\"header-center\">DDCP 2026</div>\n"
 "    </header>\n"
 "\n"
-"    <div class=\"container\">\n"
+"    <div class=\"container\">\n" // Representação de comando joystick
 "        <h3>Controle Manual (Joystick)</h3>\n"
 "        <div class=\"joystick-container\" id=\"joystick\">\n"
 "            <div class=\"joystick-knob\" id=\"knob\"></div>\n"
 "        </div>\n"
 "    </div>\n"
 "\n"
-"    <div class=\"container\">\n"
+"    <div class=\"container\">\n" // Botão de parada de emergência
 "        <button class=\"danger\" style=\"font-size: 18px; width: 80%; padding: 15px;\" onclick=\"sendCmd('CMD:EMERGENCY')\">PARADA DE EMERGÊNCIA</button>\n"
 "    </div>\n"
 "\n"
-"    <div class=\"container\">\n"
+"    <div class=\"container\">\n" // Campo para escrita no display
 "        <h3>Display</h3>\n"
 "        <input type=\"text\" id=\"display-text\" maxlength=\"20\" placeholder=\"Digite aqui\">\n"
 "        <button onclick=\"sendDisplay()\">Enviar Display</button>\n"
 "    </div>\n"
 "\n"
 "    <script>\n"
-"        function updateClock() {\n"
+"        function updateClock() {\n" // Função para atualizar relógio do cabeçalho
 "            const now = new Date();\n"
 "            const timeStr = now.toTimeString().split(' ')[0];\n"
 "            const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];\n"
@@ -119,7 +119,7 @@ static const char *html_page =
 "        }\n"
 "        setInterval(updateClock, 1000);\n"
 "\n"
-"        function sendCmd(cmd) {\n"
+"        function sendCmd(cmd) {\n" // Função interface geral WEB-UART
 "            fetch('/cmd?msg=' + encodeURIComponent(cmd));\n"
 "        }\n"
 "\n"
@@ -128,19 +128,19 @@ static const char *html_page =
 "        let dragging = false;\n"
 "        const maxD = 100;\n"
 "\n"
-"        function handleMove(clientX, clientY) {\n"
+"        function handleMove(clientX, clientY) {\n" // Função para medir movimentação do joystick
 "            const rect = joystick.getBoundingClientRect();\n"
 "            const centerX = rect.left + rect.width/2;\n"
 "            const centerY = rect.top + rect.height/2;\n"
-"            let dx = clientX - centerX;\n"
-"            let dy = clientY - centerY;\n"
+"            let dx = clientX - centerX;\n" // Calcula diferença no eixo X
+"            let dy = clientY - centerY;\n" // Calcula diferença no eixo Y
 "            if(dx <= maxD && dx >= -maxD && dy <= maxD && dy >= -maxD){\n"
 "               knob.style.transform = `translate(${dx}px, ${dy}px)`;\n"
-"               sendCmd('M ' + (dx/maxD).toFixed(3) + ' ' + (dy/maxD).toFixed(3));\n"
+"               sendCmd('M ' + (dx/maxD).toFixed(3) + ' ' + (dy/maxD).toFixed(3));\n" // Define comunicação sobre motores a ser enviada
 "            }\n"
 "        }\n"
 "\n"
-"        knob.addEventListener('mousedown', (e) => { dragging = true; });\n"
+"        knob.addEventListener('mousedown', (e) => { dragging = true; });\n" // EventListener para mouses
 "        window.addEventListener('mousemove', (e) => { if (dragging) handleMove(e.clientX, e.clientY); });\n"
 "        window.addEventListener('mouseup', () => {\n"
 "            if (dragging) {\n"
@@ -150,7 +150,7 @@ static const char *html_page =
 "            }\n"
 "        });\n"
 "\n"
-"        knob.addEventListener('touchstart', (e) => { dragging = true; });\n"
+"        knob.addEventListener('touchstart', (e) => { dragging = true; });\n" // EventListener para touchscreen
 "        window.addEventListener('touchmove', (e) => { if (dragging) handleMove(e.touches[0].clientX, e.touches[0].clientY); });\n"
 "        window.addEventListener('touchend', () => {\n"
 "            if (dragging) {\n"
@@ -160,7 +160,7 @@ static const char *html_page =
 "            }\n"
 "        });\n"
 "\n"
-"        function sendDisplay() {\n"
+"        function sendDisplay() {\n" // Envia comunicações sobre o texto do display
 "            const text = document.getElementById('display-text').value;\n"
 "            sendCmd('D ' + text);\n"
 "        }\n"
@@ -168,40 +168,40 @@ static const char *html_page =
 "</body>\n"
 "</html>";
 
-static esp_err_t root_get_handler(httpd_req_t *req){
-    httpd_resp_set_type(req, "text/html");
-    httpd_resp_send(req, html_page, strlen(html_page));
+static esp_err_t root_get_handler(httpd_req_t *req){ // Handler do root
+    httpd_resp_set_type(req, "text/html"); // Define tipo do envio
+    httpd_resp_send(req, html_page, strlen(html_page)); // Envia
     return ESP_OK;
 }
 
-static esp_err_t cmd_get_handler(httpd_req_t *req){
+static esp_err_t cmd_get_handler(httpd_req_t *req){ // Handler de envio de comandos
     char buf[128];
     size_t buf_len = sizeof(buf);
     
     if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK){
         char param[64];
-        if (httpd_query_key_value(buf, "msg", param, sizeof(param)) == ESP_OK) uart_send_command(param);
+        if (httpd_query_key_value(buf, "msg", param, sizeof(param)) == ESP_OK) uart_send_command(param); // Envia a comunicação por UART
     }
     
     httpd_resp_send(req, "OK", 2);
     return ESP_OK;
 }
 
-static const httpd_uri_t root = {
+static const httpd_uri_t root = { // Objeto caminho /
     .uri       = "/",
     .method    = HTTP_GET,
     .handler   = root_get_handler,
     .user_ctx  = NULL
 };
 
-static const httpd_uri_t cmd = {
+static const httpd_uri_t cmd = { // Objeto caminho /cmd
     .uri       = "/cmd",
     .method    = HTTP_GET,
     .handler   = cmd_get_handler,
     .user_ctx  = NULL
 };
 
-httpd_handle_t start_webserver(void){
+void start_webserver(void){ // Inicialização dos recursos para o protocolo HTTP
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.max_uri_handlers = 8;
@@ -210,10 +210,28 @@ httpd_handle_t start_webserver(void){
         httpd_register_uri_handler(server, &root);
         httpd_register_uri_handler(server, &cmd);
     }
-
-    return server;
 }
 
-void stop_webserver(httpd_handle_t server){
-    if (server) httpd_stop(server);
+void wifi_init_softap(void){ // Inicializa e configura o ponto de acesso WIFI
+    ESP_ERROR_CHECK(esp_netif_init());
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+    esp_netif_create_default_wifi_ap(); // Alocações iniciais de recursos
+
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+
+    wifi_config_t wifi_config = { // Objeto de configurações do WIFI
+        .ap = {
+            .ssid = WIFI_SSID,
+            .ssid_len = strlen(WIFI_SSID),
+            .channel = 1,
+            .password = WIFI_PASS,
+            .max_connection = MAX_STA_CONN,
+            .authmode = WIFI_AUTH_WPA2_PSK,
+        },
+    };
+
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_start()); // Inicializações efetivas do recurso
 }

@@ -5,8 +5,8 @@
 #include "freertos/task.h"
 #include "driver/uart.h"
 
-void uart_bridge_init(void) {
-    const uart_config_t uart_config = {
+void uart_bridge_init(void){ // Função para inicialização do recurso
+    const uart_config_t uart_config = { // Configuração do UART usando biblioteca do ESP
         .baud_rate = UART_BAUD_RATE,
         .data_bits = UART_DATA_8_BITS,
         .parity    = UART_PARITY_DISABLE,
@@ -16,12 +16,11 @@ void uart_bridge_init(void) {
     };
     
     uart_param_config(UART_NUM_STM, &uart_config);
-    uart_set_pin(UART_NUM_STM, UART_TX_PIN, UART_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-    uart_driver_install(UART_NUM_STM, UART_BUF_SIZE * 2, 0, 0, NULL, 0);
+    uart_set_pin(UART_NUM_STM, UART_TX_PIN, UART_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE); // Define pinos UART
+    uart_driver_install(UART_NUM_STM, UART_BUF_SIZE * 2, 0, 0, NULL, 0); // Alocação final de recursos
 }
 
-void uart_send_command(const char *cmd_str) {
-    if (cmd_str == NULL) return;
-    uart_write_bytes(UART_NUM_STM, cmd_str, strlen(cmd_str));
-    uart_write_bytes(UART_NUM_STM, "\n", 1);
+void uart_send_command(const char *cmd_str){ // Função para enviar comunicação
+    uart_write_bytes(UART_NUM_STM, cmd_str, strlen(cmd_str)); // Envia os bytes da comunicação
+    uart_write_bytes(UART_NUM_STM, "\n", 1); // Envia byte de finalização
 }

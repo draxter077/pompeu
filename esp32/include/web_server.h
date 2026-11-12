@@ -3,7 +3,11 @@
 
 #include "esp_http_server.h"
 
-httpd_handle_t start_webserver(void);
-void stop_webserver(httpd_handle_t server);
+#define WIFI_SSID       "DCPP"
+#define WIFI_PASS       "rambo2026"
+#define MAX_STA_CONN    4
+
+void start_webserver(void); // Função para inicializar recurso
+void wifi_init_softap(void) // Função para configurar ponto de acesso WIFI
 
 #endif
